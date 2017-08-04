@@ -1,3 +1,7 @@
+
+# IDENTIFICAR PRODUCTORES CON MÁS DE UNA FINCA ----------------------------
+
+
 # Login a Salesforce
 library(RForcecom)
 username <- "admin@andes.org"
@@ -20,6 +24,31 @@ prod.mult.fincas <- left_join(fincas, tab.fincas,
 
 prod.mult.fincas <- prod.mult.fincas[prod.mult.fincas$Freq > 1, ]
 
-# Exportar datos
-prod.mult.fincas <- prod.mult.fincas[order(prod.mult.fincas$farmerName__c),]
-write.csv(prod.mult.fincas, "Productores con mas de 1 finca.csv")
+
+
+# DATOS FARM BASELINE -----------------------------------------------------
+
+# Descargar datos farm baseline
+farmBl.desc <- rforcecom.getObjectDescription(session, "gfmAg__farmBaseline__c")
+farmBl.campos <- farmBl.desc$name
+
+farmBl <- rforcecom.retrieve(session, "gfmAg__farmBaseline__c", farmBl.campos)
+farmBl <- farmBl[farmBl$gfmAg__Baseline_Name__c == "Línea Base 2016", ]
+farmBl <- farmBl[!is.na(farmBl$Submission__c), ]
+
+# Verificar si hay submissions repetidos
+subm.mult <- data.frame((table(farmBl$Submission__c)))
+table(subm.mult$Freq)
+# Revisar esto (un submission repetido 35 veces, 4 dos veces):
+#    0    1    2   35 
+#    6  2013   4   1 
+
+# Agregar datos farm baseline a prod.mult.fincas
+datos <- left_join(prod.mult.fincas, farmBl, 
+                   by = c("Submission__c", "Submission__c"))
+
+write.csv(datos, "productores con multiples fincas.csv")
+
+
+
+
